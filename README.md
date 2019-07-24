@@ -1,3 +1,2 @@
-# PinPrefs
-Pin link cells in the Settings app.
-Buggy as hell and never released, but someone could probably benefit from this. The code still has all my commented out bits left in.
+# StickAround
+Pin cells in the Settings app. You can find the bugs and some plans in 2 block comments at the top of Tweak.xm.
