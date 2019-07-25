@@ -50,6 +50,16 @@ Stuff worth saying:
 
 static NSMutableArray *pins;
 bool didAddPinGroup = false;
+static NSDictionary *blacklistReasons = @{
+	@"Bluetooth" : @"Sorry, pinning the Bluetooth cell is not yet supported and may cause stability issues.",
+	@"APPLE_ACCOUNT" : @"Sorry, pinning the Account cell is not supported and causes stability issues when the pinned cell is used.",
+	@"PASSBOOK" : @"Sorry, pinning the Wallet & Apple Pay cell is not yet supported and causes instability issues."
+};
+
+NSString *getBlacklistReason(NSString *identifier) {
+	return blacklistReasons[[[identifier stringByReplacingOccurrencesOfString:@"_PINNED.0" withString:@""] stringByReplacingOccurrencesOfString:@"_PINNED" withString:@""]];
+}
+
 void savePinned() {
 	[[NSUserDefaults standardUserDefaults] setObject:pins forKey:@"pins"];
 	[[NSUserDefaults standardUserDefaults] synchronize];
@@ -102,10 +112,13 @@ bool dylibLoaded(const char *name) {
 		//The value is going to change, so change it...
 		%orig;
 		//Now reload the specifier in the PSUIPrefsListController.
-		PSUIPrefsListController *controller = (PSUIPrefsListController *)[self performSelector:@selector(_viewControllerForAncestor)];
-		//[controller reloadSpecifier:[self specifier]];
-		//[self reloadWithSpecifier:[self specifier] animated:YES];
-		[controller reloadVisible];
+		id controller = [self performSelector:@selector(_viewControllerForAncestor)];
+		//We gotta check if this is the right one though, as PSTableCells appear in other PSListControllers.
+		//If we call reloadVisible on another class, we get a crash.
+		if(![controller isMemberOfClass:%c(PSUIPrefsListController)]) {
+			return;
+		}
+		[controller performSelector:@selector(reloadVisible)];
 	} else {
 		%orig;
 	}
@@ -161,7 +174,7 @@ bool dylibLoaded(const char *name) {
 		//We don't want to add Bluetooth, and the user has to have modified
 		//	NSUserDefaults to add it (because we guard against it). If they modified NSUserDefaults to add it, they must have known
 		//	that they were trying to cheat the system. Now they will also know that you *can't* cheat the system (easily).
-		if(!pinnedSpecifier || [pinnedSpecifier.identifier isEqualToString:@"Bluetooth"]) {
+		if(!pinnedSpecifier || getBlacklistReason([pinnedSpecifier identifier])) {
 			continue;
 		}
 
@@ -220,16 +233,15 @@ bool dylibLoaded(const char *name) {
 		//Create a pin button.
 		action = [UITableViewRowAction rowActionWithStyle:UITableViewRowActionStyleNormal title:@"Pin" handler:^(UITableViewRowAction *action, NSIndexPath *indexPath) {
 			PSSpecifier *specifier = [(PSUIPrefsListController *)tableView.dataSource specifierForIndexPath:indexPath];
-			if([[specifier name] isEqualToString:@"Bluetooth"]) {
-				//Pinning bluetooth is a really bad idea... It causes an instant crash due to some reloading issue (-[PSUIPrefsListController bluetoothPowerChanged:] causes it).
-				//It's at the top anyway... Why tf would you pin it?
 
+			NSString *blacklistMessage = getBlacklistReason([specifier identifier]);
+			if(blacklistMessage) {
 				//Give the triple-tick haptic feeling to represent an error. This is designed to represent an error, so ima use it.
 				//Anything that makes the tweak feel like part of iOS is a good thing to use.
 				[feedbackGen prepare];
 				[feedbackGen notificationOccurred:UINotificationFeedbackTypeError];
 
-				showAlert(@"Bluetooth", @"Sorry, pinning the Bluetooth cell is not yet supported and may cause stability issues.", @"Okay");
+				showAlert([specifier name], blacklistMessage, @"Okay");
 				return;
 			}
 
@@ -249,6 +261,29 @@ bool dylibLoaded(const char *name) {
 
 				UIAlertAction *yessir = [UIAlertAction actionWithTitle:@"Pin" style:UIAlertActionStyleDestructive handler:^(UIAlertAction *action) {
 					//What a fucking great idea. Good choice, user.
+					[pins addObject:specifierIdentifier];
+					savePinned();
+					[self reloadSpecifiers];
+				}];
+
+				[alert addAction:yessir];
+
+				UIAlertAction *nosir = [UIAlertAction actionWithTitle:@"Cancel" style:UIAlertActionStyleCancel handler:nil];
+				[alert addAction:nosir];
+
+				[[[[UIApplication sharedApplication] keyWindow] rootViewController] presentViewController:alert animated:YES completion:nil];
+				return;
+			}
+
+			if([[specifier identifier] containsString:@"TOUCHID_PASSCODE"]) {
+				[feedbackGen prepare];
+				[feedbackGen notificationOccurred:UINotificationFeedbackTypeWarning];
+
+				NSString *message = @"Although fixes are planned, pinning the Touch ID & Passcode cell currently disables the passcode prompt when using it. Are you sure you want to pin the cell?";
+				UIAlertController *alert = [UIAlertController alertControllerWithTitle:@"Warning" message:message preferredStyle:UIAlertControllerStyleAlert];
+
+				UIAlertAction *yessir = [UIAlertAction actionWithTitle:@"Pin" style:UIAlertActionStyleDestructive handler:^(UIAlertAction *action) {
+					//uLtImAtE sEcUrItY
 					[pins addObject:specifierIdentifier];
 					savePinned();
 					[self reloadSpecifiers];
