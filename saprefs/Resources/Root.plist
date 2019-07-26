@@ -14,7 +14,7 @@
 			<key>cell</key>
 			<string>PSGroupCell</string>
 			<key>label</key>
-			<string>Stuff</string>
+			<string>SAPrefs First Page</string>
 		</dict>
 		<dict>
 			<key>cell</key>
@@ -22,14 +22,34 @@
 			<key>default</key>
 			<true/>
 			<key>defaults</key>
-			<string>com.squ1dd13.stickaroundprefs</string>
+			<string>com.squ1dd13.saprefs</string>
 			<key>key</key>
 			<string>AwesomeSwitch1</string>
 			<key>label</key>
 			<string>Awesome Switch 1</string>
 		</dict>
+		<dict>
+			<key>cell</key>
+			<string>PSLinkCell</string>
+			<key>detail</key>
+			<string>SQColorPicker</string>
+			<key>isController</key>
+			<true/>
+			<key>label</key>
+			<string>Select 'Pin' Colour</string>
+		</dict>
+		<dict>
+			<key>cell</key>
+			<string>PSLinkCell</string>
+			<key>detail</key>
+			<string>SQColorPicker</string>
+			<key>isController</key>
+			<true/>
+			<key>label</key>
+			<string>Select 'Unpin' Colour</string>
+		</dict>
 	</array>
 	<key>title</key>
-	<string>StickAroundPrefs</string>
+	<string>SAPrefs</string>
 </dict>
 </plist>

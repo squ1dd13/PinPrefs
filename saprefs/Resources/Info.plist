@@ -5,9 +5,9 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>English</string>
 	<key>CFBundleExecutable</key>
-	<string>StickAroundPrefs</string>
+	<string>SAPrefs</string>
 	<key>CFBundleIdentifier</key>
-	<string>com.squ1dd13.stickaroundprefs</string>
+	<string>com.squ1dd13.saprefs</string>
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
 	<key>CFBundlePackageType</key>

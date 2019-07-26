@@ -11,6 +11,8 @@ UIColor *createColor(const float r, const float g, const float b, const float a 
 	return [UIColor colorWithRed:r/255.0 green:g/255.0 blue:b/255.0 alpha:a];
 }
 
+//static UIColor *pinColor;
+
 /*
 Bugs:
 	- The Wallet & Apple Pay cell duplicates itself, adding one version in the original group and the other gets pinned.
@@ -149,6 +151,17 @@ bool dylibLoaded(const char *name) {
 		warnedFile << "go away im sleeping" << std::endl;
 		warnedFile.close();
 	}
+
+    /*
+	//Set a colour if we don't already have one.
+	NSString *pinColorStr = [[NSUserDefaults standardUserDefaults] objectForKey:@"saPinColor"];
+	if(!pinColorStr) {
+		[[NSUserDefaults standardUserDefaults] setObject:hexFromUIColor(createColor(52.0, 199.0, 89.0)) forKey:@"saPinColor"];
+		pinColor = createColor(52.0, 199.0, 89.0);
+	} else {
+		pinColor = colorFromHexString([[NSUserDefaults standardUserDefaults] objectForKey:@"saPinColor"]);
+	}
+    */
 }
 
 %new
