@@ -1,6 +1,7 @@
 @class PSSpecifier;
 #import <Preferences/PSListController.h>
 #import <Preferences/PSTableCell.h>
+#import <Preferences/PSSpecifier.h>
 #include <iostream>
 #include <fstream>
 #include <sys/stat.h>
@@ -11,21 +12,10 @@ UIColor *createColor(const float r, const float g, const float b, const float a 
 	return [UIColor colorWithRed:r/255.0 green:g/255.0 blue:b/255.0 alpha:a];
 }
 
-//static UIColor *pinColor;
-
 /*
 Bugs:
-	- The Wallet & Apple Pay cell duplicates itself, adding one version in the original group and the other gets pinned.
-	- When the Touch ID & Passcode specifier has a different ID, it doesn't ask for a passcode when opened.
-	- When the APPLE_ACCOUNT specifier is pinned and the cell is used, the Settings app crashes and will not open again.
 	- The Wifi cell's subtitle (the network name) doesn't change when turned off while pinned.
-*/
-
-/*
-Stuff worth saying:
-	- Dunno if iOS 12 is supported. Probably not.
-	- Maybe adding a 3D Touch action to clear all pins would be a good idea?
-	- A blacklist for cells that can't be pinned should be introduced.
+	- More coming soon :P
 */
 
 @interface PSUIPrefsListController : PSListController
@@ -74,21 +64,15 @@ void showAlert(NSString *title, NSString *content, NSString *dismissButtonStr) {
     [[[[UIApplication sharedApplication] keyWindow] rootViewController] presentViewController:alert animated:YES completion:nil];
 }
 
-@interface PSSpecifier : NSObject
-@property (nonatomic, strong, readwrite) NSString *name;
-@property (nonatomic, strong, readwrite) NSString *identifier;
--(void)setProperties:(id)properties;
-@end
-
 bool specifierIsAppSpecifier(PSSpecifier *specifier) {
 	//TODO: Make this more efficient (string comparison? really?).
 	//Not to be used in a loop or anything, because that would be slow.
 	Class dcc;
-	return (dcc = [specifier valueForKey:@"detailControllerClass"]) && [NSStringFromClass(dcc) isEqualToString:@"PSAppListController"];
+	return (dcc = [specifier detailControllerClass]) && dcc == %c(PSAppListController);
 }
 
 bool specifierIsTweakSpecifier(PSSpecifier *specifier) {
-	return [specifier respondsToSelector:@selector(preferenceLoaderBundle)] && [specifier valueForKey:@"preferenceLoaderBundle"];
+	return [specifier performSelector:@selector(preferenceLoaderBundle)];
 }
 
 PSSpecifier *getSpecifier(NSArray *specifiers, NSString *identifier) {
@@ -151,17 +135,6 @@ bool dylibLoaded(const char *name) {
 		warnedFile << "go away im sleeping" << std::endl;
 		warnedFile.close();
 	}
-
-    /*
-	//Set a colour if we don't already have one.
-	NSString *pinColorStr = [[NSUserDefaults standardUserDefaults] objectForKey:@"saPinColor"];
-	if(!pinColorStr) {
-		[[NSUserDefaults standardUserDefaults] setObject:hexFromUIColor(createColor(52.0, 199.0, 89.0)) forKey:@"saPinColor"];
-		pinColor = createColor(52.0, 199.0, 89.0);
-	} else {
-		pinColor = colorFromHexString([[NSUserDefaults standardUserDefaults] objectForKey:@"saPinColor"]);
-	}
-    */
 }
 
 %new
@@ -206,6 +179,45 @@ bool dylibLoaded(const char *name) {
 		We don't need to add a group; by adding cells that already exist to the front of the specifiers array (so before the first group specifier),
 		we force the creation of a new group. If we added new cells (not pointers to the original cells), we would need to create our own group.
 	*/
+
+	//There's a bug in PreferenceLoader (afaik) that means that after -[PSUIPrefsListController reloadSpecifiers] is called, the tweak settings group
+	//	moves to the bottom of the Settings app. Since most users never experience this bug (because the method is not called at a problematic time for them)
+	//	this looks like an issue with StickAround. This can usually be replicated by calling the method through FLEX manually. In order to stop users
+	//	complaining, we need to fix this.
+
+	//Move the 3rd party apps group specifier to the end.
+	NSMutableArray *thirdParty = [NSMutableArray array];
+	bool foundGroup = false;
+	for(PSSpecifier *specifier in specifiers) {
+		if(!foundGroup) {
+			//If we still haven't found the group, keep looking.
+			//Skip if not a group cell, because comparing each identifier would be slow.
+			if([specifier cellType] != 0) continue;
+
+			if([specifier.identifier isEqualToString:@"THIRD_PARTY_GROUP"]) {
+				[thirdParty addObject:specifier];
+				foundGroup = true;
+			}
+
+			continue;
+		}
+
+		//Check normal cells.
+		if(specifierIsAppSpecifier(specifier)) {
+			[thirdParty addObject:specifier];
+		} else {
+			//If this is not an app specifier, we must have found all of them.
+			break;
+		}
+	}
+
+	//Remove these specifiers.
+	[specifiers removeObjectsInArray:thirdParty];
+
+	//Add them back, but at the end of the array.
+	for(PSSpecifier *tpSpecifier in thirdParty) {
+		[specifiers addObject:tpSpecifier];
+	}
 
 	return specifiers;
 }
@@ -254,7 +266,7 @@ bool dylibLoaded(const char *name) {
 				[feedbackGen prepare];
 				[feedbackGen notificationOccurred:UINotificationFeedbackTypeError];
 
-				showAlert([specifier name], blacklistMessage, @"Okay");
+				showAlert(@"Unsupported", blacklistMessage, @"Okay");
 				return;
 			}
 

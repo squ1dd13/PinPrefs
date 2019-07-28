@@ -7,14 +7,8 @@
 		<dict>
 			<key>cell</key>
 			<string>PSGroupCell</string>
-			<key>headerCellClass</key>
-			<string>SAPHeaderView</string>
-		</dict>
-		<dict>
-			<key>cell</key>
-			<string>PSGroupCell</string>
 			<key>label</key>
-			<string>SAPrefs First Page</string>
+			<string>saprefs First Page</string>
 		</dict>
 		<dict>
 			<key>cell</key>
@@ -29,27 +23,15 @@
 			<string>Awesome Switch 1</string>
 		</dict>
 		<dict>
-			<key>cell</key>
-			<string>PSLinkCell</string>
-			<key>detail</key>
-			<string>SQColorPicker</string>
-			<key>isController</key>
-			<true/>
-			<key>label</key>
-			<string>Select 'Pin' Colour</string>
-		</dict>
-		<dict>
-			<key>cell</key>
-			<string>PSLinkCell</string>
-			<key>detail</key>
-			<string>SQColorPicker</string>
-			<key>isController</key>
-			<true/>
-			<key>label</key>
-			<string>Select 'Unpin' Colour</string>
-		</dict>
+					<key>cell</key>
+					<string>PSButtonCell</string>
+					<key>action</key>
+					<string>openColorPicker</string>
+					<key>label</key>
+					<string>colour</string>
+						</dict>
 	</array>
 	<key>title</key>
-	<string>SAPrefs</string>
+	<string>saprefs</string>
 </dict>
 </plist>

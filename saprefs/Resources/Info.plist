@@ -5,7 +5,7 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>English</string>
 	<key>CFBundleExecutable</key>
-	<string>SAPrefs</string>
+	<string>saprefs</string>
 	<key>CFBundleIdentifier</key>
 	<string>com.squ1dd13.saprefs</string>
 	<key>CFBundleInfoDictionaryVersion</key>
