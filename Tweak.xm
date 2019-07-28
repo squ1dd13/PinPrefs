@@ -65,8 +65,6 @@ void showAlert(NSString *title, NSString *content, NSString *dismissButtonStr) {
 }
 
 bool specifierIsAppSpecifier(PSSpecifier *specifier) {
-	//TODO: Make this more efficient (string comparison? really?).
-	//Not to be used in a loop or anything, because that would be slow.
 	Class dcc;
 	return (dcc = [specifier detailControllerClass]) && dcc == %c(PSAppListController);
 }
