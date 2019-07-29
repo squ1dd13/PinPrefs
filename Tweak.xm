@@ -41,7 +41,7 @@ Bugs:
 @end
 
 static NSMutableArray *pins;
-bool didAddPinGroup = false;
+bool didTellBehaviour = false;
 static NSDictionary *blacklistReasons = @{
 	@"Bluetooth" : @"Sorry, pinning the Bluetooth cell is not yet supported and may cause stability issues.",
 	@"APPLE_ACCOUNT" : @"Sorry, pinning the Account cell is not supported and causes stability issues when the pinned cell is used.",
@@ -114,6 +114,8 @@ bool dylibLoaded(const char *name) {
 - (void)viewDidAppear:(BOOL)animated {
 	%orig;
 
+	didTellBehaviour = bool([[NSUserDefaults standardUserDefaults] objectForKey:@"didTellBehaviour"]);
+
 	//If we have already warned the user about Cask, just return.
 	if(std::ifstream("/var/mobile/Library/Application Support/StickAround/warned.lol")) return;
 
@@ -126,7 +128,7 @@ bool dylibLoaded(const char *name) {
 		[feedbackGen notificationOccurred:UINotificationFeedbackTypeWarning];
 
 		NSString *message = @"Please note that Cask animates cells when they are refreshed, which causes lots of unnecessary animations to take place when you pin cells in the Settings app. Please consider removing Cask if you wish to have a better experience.";
-		showAlert(@"Cask Installed", message, @"Okay");
+		showAlert(@"Cask Loaded", message, @"Okay");
 		mkdir("/var/mobile/Library/Application Support/StickAround", 0755);
 
 		std::ofstream warnedFile("/var/mobile/Library/Application Support/StickAround/warned.lol");
@@ -325,6 +327,12 @@ bool dylibLoaded(const char *name) {
 			[pins addObject:specifierIdentifier];
 			savePinned();
 			[self reloadSpecifiers];
+
+			if(!didTellBehaviour) {
+				showAlert(@"Pinning Behaviour", @"Please note that pinning a cell copies that cell and adds the copy to the top of the list. The original will still be available in the normal location.", @"Okay.");
+				[[NSUserDefaults standardUserDefaults] setObject:@":)" forKey:@"didTellBehaviour"];
+				didTellBehaviour = true;
+			}
 		}];
 
 		//Pin button, so use green.

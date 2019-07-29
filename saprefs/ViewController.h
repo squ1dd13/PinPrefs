@@ -19,5 +19,8 @@
 @property (strong, nonatomic) UISlider *blueSlider;
 @property (strong, nonatomic) UILabel *rgbLabel;
 @property (strong, nonatomic) UIButton *doneButton;
-@property (nonatomic, assign, readwrite) UIColor *chosenColor;
+@property (nonatomic, copy) UIColor *chosenColor;
+@property (nonatomic, assign, readwrite) NSString *defaultsKey;
+@property (nonatomic, assign, readwrite) NSString *defaultsDomain;
+-(id)initWithDefaultsKey:(NSString *)key domain:(NSString *)defaultsDomain defaultColor:(UIColor *)defaultColor;
 @end

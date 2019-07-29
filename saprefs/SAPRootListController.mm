@@ -91,7 +91,7 @@ NSString *getDefaultsKeyForSpecifierID(NSString *identifier) {
 }
 
 -(void)openColorPicker {
-    ViewController *colorPickerController = [[ViewController alloc] init];
+    ViewController *colorPickerController = [[ViewController alloc] initWithDefaultsKey:@"chosenColor" domain:@"com.apple.preferences" defaultColor:createColor(255.0, 149.0, 0.0)];
     [self presentViewController:colorPickerController animated:YES completion:nil];
 }
 

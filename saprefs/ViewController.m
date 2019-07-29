@@ -54,6 +54,16 @@ NSString *stringFromColor(UIColor *color) {
             lroundf(b * 255)];
 }
 
+NSString *stringFromColor2(UIColor *color) {
+    CGFloat red, green, blue, alpha;
+    [color getRed:&red green:&green blue:&blue alpha:&alpha];
+
+    return [NSString stringWithFormat:@"#%02lX%02lX%02lX",
+            lroundf(red * 255),
+            lroundf(green * 255),
+            lroundf(blue * 255)];
+}
+
 UIColor *complementaryColor(UIColor *col) {
     CGFloat hue, saturation, brightness, alpha;
     [col getHue:&hue saturation:&saturation brightness:&brightness alpha:&alpha];
@@ -142,6 +152,28 @@ UIImage *getImageFromColor(UIColor *color, CGSize imageSize) {
 
 @implementation ViewController
 
+-(id)initWithDefaultsKey:(NSString *)key domain:(NSString *)defaultsDomain defaultColor:(UIColor *)defaultColor {
+    self = [super init];
+    if(self) {
+        self.defaultsKey = key;
+        self.defaultsDomain = defaultsDomain;
+
+        NSUserDefaults *defaults = [[NSUserDefaults alloc] initWithSuiteName:defaultsDomain];
+        if(![defaults objectForKey:key]) {
+            //There is no saved colour. If we have a default colour, set that, but if not, use [UIColor blackColor] instead.
+            [defaults setObject:defaultColor ? stringFromColor(defaultColor) : @"#000000" forKey:key];
+
+            //Do this here rather than doing it before and converting to hex - we already know the hex value for black.
+            self.chosenColor = defaultColor ? defaultColor : [UIColor blackColor];
+        } else {
+            NSLog(@"%@", [defaults objectForKey:key]);
+            self.chosenColor = colorFromString([defaults objectForKey:key]);
+        }
+    }
+
+    return self;
+}
+
 -(void)loadView {
     [super loadView];
 
@@ -179,6 +211,7 @@ UIImage *getImageFromColor(UIColor *color, CGSize imageSize) {
     [self.doneButton setTitle:@"Done" forState:UIControlStateNormal];
     self.doneButton.titleLabel.font = [UIFont systemFontOfSize:18 weight:UIFontWeightBold];
     self.doneButton.clipsToBounds = YES;
+    [self.doneButton setTitleColor:[UIColor blackColor] forState:UIControlStateNormal];
 
     [self.view addSubview:self.redSlider];
     [self.view addSubview:self.greenSlider];
@@ -192,9 +225,8 @@ UIImage *getImageFromColor(UIColor *color, CGSize imageSize) {
 - (void)viewDidLoad {
     [super viewDidLoad];
 
-    NSBundle *bundle = [NSBundle bundleForClass:[[self presentingViewController] class]];
+    NSBundle *bundle = [NSBundle bundleForClass:[self class]];
     NSString *path = [bundle pathForResource:@"ColourMap" ofType:@"plist"];
-    chmod([path UTF8String], 755);
     self.colorNames = loadColorNames(path);
 
     [self.hexTextField addTarget:self action:@selector(textFieldDidChange:)
@@ -241,16 +273,15 @@ UIImage *getImageFromColor(UIColor *color, CGSize imageSize) {
 
     self.doneButton.layer.cornerRadius = 8.0f;
 
+    [self.doneButton setTitleColor:self.view.backgroundColor forState:UIControlStateNormal];
+
     //Show the first colour.
-    [self.hexTextField setText:@"#000000"];
-    [self updateWithColor:[UIColor blackColor]];
+    [self updateWithColor:self.chosenColor];
 }
 
 -(void)sliderValueChanged:(UISlider *)slidey {
     CGFloat red = self.redSlider.value, green = self.greenSlider.value, blue = self.blueSlider.value;
     UIColor *newColor = [UIColor colorWithRed:red / 255.0 green:green / 255.0 blue:blue / 255.0 alpha:1.0f];
-
-    [self.hexTextField setText:stringFromColor(self.view.backgroundColor)];
 
     //Trigger other UI updates.
     [self updateWithColor:newColor];
@@ -264,7 +295,11 @@ UIImage *getImageFromColor(UIColor *color, CGSize imageSize) {
 }
 
 -(void)updateWithColor:(UIColor *)color {
-    self.view.backgroundColor = color;
+    self.chosenColor = self.view.backgroundColor = color;
+
+    self.doneButton.titleLabel.textColor = color;
+
+    [self.hexTextField setText:stringFromColor(self.chosenColor)];
 
     if(![self.view.backgroundColor isEqual:[UIColor colorWithRed:self.redSlider.value / 255.0 green:self.greenSlider.value / 255.0 blue:self.blueSlider.value / 255.0 alpha:1.0f]]) {
         //Update the sliders.
@@ -310,7 +345,6 @@ UIImage *getImageFromColor(UIColor *color, CGSize imageSize) {
     self.colorNameLabel.text = getColorName(self.view.backgroundColor, _colorNames);
 
     self.rgbLabel.text = [NSString stringWithFormat:@"R: %.0f   G: %.0f   B: %.0f", self.redSlider.value, self.greenSlider.value, self.blueSlider.value];
-    //[self.rgbLabel setNeedsDisplay];
 }
 
 - (BOOL)textField:(UITextField *)textField shouldChangeCharactersInRange:(NSRange)range replacementString:(NSString *)string {
@@ -354,6 +388,11 @@ UIImage *getImageFromColor(UIColor *color, CGSize imageSize) {
 
 -(void)excuseSelf:(UIButton *)btn {
     self.chosenColor = self.view.backgroundColor;
+
+    NSUserDefaults *defaults = [[NSUserDefaults alloc] initWithSuiteName:self.defaultsDomain];
+    [defaults setObject:stringFromColor(self.chosenColor) forKey:self.defaultsKey];
+    [defaults synchronize];
+
     [self.presentingViewController dismissViewControllerAnimated:YES completion:nil];
 }
 
